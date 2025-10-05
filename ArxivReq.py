@@ -2,6 +2,8 @@ import urllib.request
 import urllib.parse
 from datetime import datetime, timedelta
 
+from keyword_agent import KeywordAgent
+
 
 def search_arxiv(terms=None, operator=None, category=None, search_in="all",
                  max_results=10, start=0, sort_by=None, sort_order="descending",
@@ -145,7 +147,9 @@ if __name__ == "__main__":
     # raglist=['electrons','RAG','IOT']
     # result = search_arxiv(raglist, date_from=last_days(365), max_results=10,operator="OR")
     # print(result)
-    topics = ["agents", "RAG", "IOT"]
+    keyword_a=KeywordAgent
+    prompt=''''''
+    topics = keyword_a.generate_response()
     all_results = search_multiple_topics(topics, date_from=last_days(365), max_results=10)
 
     # Access individual results
