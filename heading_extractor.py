@@ -53,7 +53,7 @@ def extract_headings(markdown_text):
     lines = markdown_text.split('\n')
     is_first_heading = True
 
-    for line in lines:
+    for line_idx, line in enumerate(lines):
         line = line.strip()
 
         # Check for markdown headers
@@ -66,7 +66,8 @@ def extract_headings(markdown_text):
                 'level': level,
                 'number': None,
                 'text': heading_text,
-                'raw': line
+                'raw': line,
+                'line_index': line_idx
             })
             is_first_heading = False
             continue
@@ -82,7 +83,8 @@ def extract_headings(markdown_text):
                 'level': level,
                 'number': number,
                 'text': heading_text,
-                'raw': line
+                'raw': line,
+                'line_index': line_idx
             })
             is_first_heading = False
             continue
@@ -97,25 +99,120 @@ def extract_headings(markdown_text):
                 'level': 1,
                 'number': number,
                 'text': heading_text,
-                'raw': line
+                'raw': line,
+                'line_index': line_idx
             })
             is_first_heading = False
 
     return headings
 
 
-# Usage
-source = "https://arxiv.org/pdf/2312.07305v1"
-converter = DocumentConverter()
-result = converter.convert(source)
-markdown = result.document.export_to_markdown()
-
-headings = extract_headings(markdown)
-
-# Display results
-for h in headings:
-    indent = "  " * (h['level'] - 1)
-    if h['number']:
-        print(f"{indent}{h['number']} {h['text']}")
+def get_text_between_headings(markdown_text, heading_name):
+    """
+    Extract text from a specified heading to the next heading.
+    
+    Args:
+        markdown_text: The markdown text from the document
+        heading_name: The name of the heading to search for (case-insensitive, partial match)
+    
+    Returns:
+        A dictionary containing:
+        - 'found': Boolean indicating if the heading was found
+        - 'heading': The matched heading text
+        - 'content': The text between the heading and the next heading
+        - 'next_heading': The next heading (if exists)
+    """
+    headings = extract_headings(markdown_text)
+    lines = markdown_text.split('\n')
+    
+    # Find the heading that matches the search term (case-insensitive)
+    heading_name_lower = heading_name.lower()
+    matched_heading = None
+    matched_index = None
+    
+    for idx, heading in enumerate(headings):
+        # Check if the heading text contains the search term
+        heading_text = heading['text'].lower()
+        heading_raw = heading['raw'].lower()
+        
+        if heading_name_lower in heading_text or heading_name_lower in heading_raw:
+            matched_heading = heading
+            matched_index = idx
+            break
+    
+    if not matched_heading:
+        return {
+            'found': False,
+            'heading': None,
+            'content': None,
+            'next_heading': None,
+            'available_headings': [h['text'] for h in headings]
+        }
+    
+    # Get the start line (line after the matched heading)
+    start_line = matched_heading['line_index'] + 1
+    
+    # Get the end line (line before the next heading, if exists)
+    if matched_index + 1 < len(headings):
+        next_heading = headings[matched_index + 1]
+        end_line = next_heading['line_index']
     else:
-        print(f"{indent}{'#' * h['level']} {h['text']}")
+        next_heading = None
+        end_line = len(lines)
+    
+    # Extract the content between the headings
+    content_lines = lines[start_line:end_line]
+    content = '\n'.join(content_lines).strip()
+    
+    return {
+        'found': True,
+        'heading': matched_heading['text'],
+        'content': content,
+        'next_heading': next_heading['text'] if next_heading else None
+    }
+
+
+if __name__ == "__main__":
+    # Usage example
+    source = "https://arxiv.org/pdf/2312.07305v1"
+    converter = DocumentConverter()
+    result = converter.convert(source)
+    markdown = result.document.export_to_markdown()
+    print(markdown)
+    # Extract all headings
+    headings = extract_headings(markdown)
+
+    # Display all headings
+    print("=" * 80)
+    print("ALL HEADINGS IN DOCUMENT:")
+    print("=" * 80)
+    for h in headings:
+        indent = "  " * (h['level'] - 1)
+        if h['number']:
+            print(f"{indent}{h['number']} {h['text']}")
+        else:
+            print(f"{indent}{'#' * h['level']} {h['text']}")
+
+    print("\n" + "=" * 80)
+    print("EXTRACT TEXT FROM A SPECIFIC HEADING:")
+    print("=" * 80)
+
+    # Example: Get text from a specific heading
+    # You can change this to any heading name you want
+    heading_to_search = input("\nEnter the heading name you want to extract (or press Enter to skip): ").strip()
+
+    if heading_to_search:
+        result = get_text_between_headings(markdown, heading_to_search)
+
+        if result['found']:
+            print(f"\n✓ Found heading: {result['heading']}")
+            print(f"Next heading: {result['next_heading'] if result['next_heading'] else 'End of document'}")
+            print("\n" + "-" * 80)
+            print("CONTENT:")
+            print("-" * 80)
+            print(result['content'])
+        else:
+            print(f"\n✗ Heading '{heading_to_search}' not found.")
+            print("\nAvailable headings:")
+            for h in result['available_headings']:
+                print(f"  - {h}")
