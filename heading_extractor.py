@@ -34,8 +34,6 @@ def clean_heading_text(text, is_title=False):
 def extract_headings(markdown_text):
     headings = []
     markdown_pattern = r'^(#{1,6})\s*(.*)$'
-    numbered_pattern = r'^(\d+(?:\.\d+)*\.?)\s+(.*)$'
-    paren_pattern = r'^(\d+\))\s+(.*)$'
 
     lines = markdown_text.split('\n')
     is_first_heading = True
@@ -43,6 +41,7 @@ def extract_headings(markdown_text):
     for line_num, line in enumerate(lines):
         line_stripped = line.strip()
 
+        # ONLY check for markdown headers
         md_match = re.match(markdown_pattern, line_stripped)
         if md_match:
             level = len(md_match.group(1))
@@ -56,40 +55,8 @@ def extract_headings(markdown_text):
                 'line_num': line_num
             })
             is_first_heading = False
-            continue
-
-        num_match = re.match(numbered_pattern, line_stripped)
-        if num_match:
-            number = num_match.group(1)
-            heading_text = clean_heading_text(num_match.group(2).strip(), is_first_heading)
-            level = number.count('.') + 1
-            headings.append({
-                'type': 'numbered',
-                'level': level,
-                'number': number,
-                'text': heading_text,
-                'raw': line_stripped,
-                'line_num': line_num
-            })
-            is_first_heading = False
-            continue
-
-        paren_match = re.match(paren_pattern, line_stripped)
-        if paren_match:
-            number = paren_match.group(1)
-            heading_text = clean_heading_text(paren_match.group(2).strip(), is_first_heading)
-            headings.append({
-                'type': 'parenthetical',
-                'level': 1,
-                'number': number,
-                'text': heading_text,
-                'raw': line_stripped,
-                'line_num': line_num
-            })
-            is_first_heading = False
 
     return headings
-
 
 def get_text_between_headings(markdown_text, start_heading, end_heading=None):
     """
@@ -129,14 +96,122 @@ def get_text_between_headings(markdown_text, start_heading, end_heading=None):
     return '\n'.join(content_lines).strip()
 
 
+def extract_introduction(markdown_text):
+    """
+    Extract the introduction section from markdown text.
+    
+    This function looks for common variations of introduction headings such as:
+    - Introduction
+    - I. Introduction
+    - 1. Introduction
+    
+    Args:
+        markdown_text: The full markdown text
+        
+    Returns:
+        String containing the introduction text, or an error message if not found
+    """
+    lines = markdown_text.split('\n')
+    headings = extract_headings(markdown_text)
+    
+    # Common introduction heading patterns (case-insensitive)
+    intro_patterns = ['introduction', 'intro']
+    
+    # Find the introduction heading
+    start_idx = None
+    start_level = None
+    for h in headings:
+        heading_text_lower = h['text'].lower()
+        for pattern in intro_patterns:
+            if pattern in heading_text_lower:
+                start_idx = h['line_num']
+                start_level = h['level']
+                break
+        if start_idx is not None:
+            break
+    
+    if start_idx is None:
+        return "Introduction section not found"
+    
+    # Find the next heading of the same or higher level (lower number = higher level)
+    end_idx = len(lines)
+    for h in headings:
+        if h['line_num'] > start_idx and h['level'] <= start_level:
+            end_idx = h['line_num']
+            break
+    
+    # Extract the introduction content
+    content_lines = lines[start_idx + 1:end_idx]
+    return '\n'.join(content_lines).strip()
+
+
+def extract_conclusion(markdown_text):
+    """
+    Extract the conclusion section from markdown text.
+    
+    This function looks for common variations of conclusion headings such as:
+    - Conclusion
+    - Conclusions
+    - Concluding Remarks
+    - Summary
+    - VI. Conclusion
+    
+    Args:
+        markdown_text: The full markdown text
+        
+    Returns:
+        String containing the conclusion text, or an error message if not found
+    """
+    lines = markdown_text.split('\n')
+    headings = extract_headings(markdown_text)
+    
+    # Common conclusion heading patterns (case-insensitive)
+    conclusion_patterns = ['conclusion', 'concluding', 'summary', 'closing']
+    
+    # Find the conclusion heading
+    start_idx = None
+    start_level = None
+    for h in headings:
+        heading_text_lower = h['text'].lower()
+        for pattern in conclusion_patterns:
+            if pattern in heading_text_lower:
+                start_idx = h['line_num']
+                start_level = h['level']
+                break
+        if start_idx is not None:
+            break
+    
+    if start_idx is None:
+        return "Conclusion section not found"
+    
+    # Find the next heading of the same or higher level (lower number = higher level)
+    # For conclusion, often it's the last section before references/acknowledgments
+    end_idx = len(lines)
+    for h in headings:
+        if h['line_num'] > start_idx and h['level'] <= start_level:
+            # Skip common post-conclusion sections
+            heading_lower = h['text'].lower()
+            if any(skip in heading_lower for skip in ['reference', 'acknowledgment', 'acknowledgement', 'appendix']):
+                end_idx = h['line_num']
+                break
+            # If it's another major section that's not a post-conclusion section, use it as end
+            if h['level'] == start_level:
+                end_idx = h['line_num']
+                break
+    
+    # Extract the conclusion content
+    content_lines = lines[start_idx + 1:end_idx]
+    return '\n'.join(content_lines).strip()
+
+
 # Usage
-source = "https://arxiv.org/pdf/2312.07305v1"
+source = "http://arxiv.org/pdf/2409.12922v1"
 converter = DocumentConverter()
 result = converter.convert(source)
 markdown = result.document.export_to_markdown()
-
+# print(markdown)
 headings = extract_headings(markdown)
-
+#
 # Display all headings
 print("=== ALL HEADINGS ===")
 for h in headings:
@@ -146,8 +221,16 @@ for h in headings:
     else:
         print(f"{indent}{'#' * h['level']} {h['text']}")
 
-# Example: Extract text between two headings
-print("\n=== TEXT BETWEEN HEADINGS ===")
-text = get_text_between_headings(markdown, "Introduction", "References")
-print(f"Text between 'Introduction' and 'Related Work':")
-print(text)
+# # Example: Extract text between two headings
+# print("\n=== TEXT BETWEEN HEADINGS ===")
+# text = get_text_between_headings(markdown, "II. RELATED WORKS", "III. OUR PROPOSED APPROACH")
+# print(text)
+
+# Example: Extract introduction
+print("\n=== INTRODUCTION ===")
+introduction = extract_introduction(markdown)
+print(introduction)
+
+print("\n=== CONCLUSION ===")
+conclusion = extract_conclusion(markdown)
+print(conclusion)
