@@ -1,6 +1,9 @@
+import sys
 import urllib.request
 import urllib.parse
 from datetime import datetime, timedelta
+import xml.etree.ElementTree as ET
+import json
 
 from keyword_agent import KeywordAgent
 
@@ -98,6 +101,134 @@ def search_arxiv(terms=None, operator=None, category=None, search_in="all",
     return response.read().decode('utf-8')
 
 
+def parse_arxiv_xml_to_json(xml_string):
+    """
+    Parse arXiv API XML response and convert to JSON format.
+    
+    Args:
+        xml_string: XML string from arXiv API response
+        
+    Returns:
+        Dictionary containing parsed paper information
+    """
+    # Define namespaces
+    namespaces = {
+        'atom': 'http://www.w3.org/2005/Atom',
+        'opensearch': 'http://a9.com/-/spec/opensearch/1.1/',
+        'arxiv': 'http://arxiv.org/schemas/atom'
+    }
+    
+    # Parse XML
+    root = ET.fromstring(xml_string)
+    
+    # Extract feed-level metadata
+    feed_link = root.find('atom:link[@rel="self"]', namespaces)
+    feed_title = root.find('atom:title', namespaces)
+    feed_id = root.find('atom:id', namespaces)
+    feed_updated = root.find('atom:updated', namespaces)
+    
+    # Extract opensearch metadata
+    total_results = root.find('opensearch:totalResults', namespaces)
+    start_index = root.find('opensearch:startIndex', namespaces)
+    items_per_page = root.find('opensearch:itemsPerPage', namespaces)
+    
+    result = {
+        'feed_link': feed_link.get('href') if feed_link is not None else None,
+        'feed_title': feed_title.text if feed_title is not None else None,
+        'feed_id': feed_id.text if feed_id is not None else None,
+        'feed_updated': feed_updated.text if feed_updated is not None else None,
+        'total_results': int(total_results.text) if total_results is not None else 0,
+        'start_index': int(start_index.text) if start_index is not None else 0,
+        'items_per_page': int(items_per_page.text) if items_per_page is not None else 0,
+        'papers': []
+    }
+    
+    # Extract paper entries
+    for entry in root.findall('atom:entry', namespaces):
+        paper = {}
+        
+        # Extract ID and convert to arxiv_id
+        id_elem = entry.find('atom:id', namespaces)
+        if id_elem is not None:
+            paper['id'] = id_elem.text
+            # Extract arxiv_id from URL (e.g., "2205.06168v1" from "http://arxiv.org/abs/2205.06168v1")
+            paper['arxiv_id'] = id_elem.text.split('/abs/')[-1]
+        
+        # Extract dates
+        published = entry.find('atom:published', namespaces)
+        if published is not None:
+            paper['published'] = published.text
+            
+        updated = entry.find('atom:updated', namespaces)
+        if updated is not None:
+            paper['updated'] = updated.text
+        
+        # Extract title
+        title = entry.find('atom:title', namespaces)
+        if title is not None:
+            # Clean up title (remove extra whitespace and newlines)
+            paper['title'] = ' '.join(title.text.split())
+        
+        # Extract summary/abstract
+        summary = entry.find('atom:summary', namespaces)
+        if summary is not None:
+            # Clean up summary
+            paper['summary'] = ' '.join(summary.text.split())
+        
+        # Extract authors
+        authors = []
+        for author in entry.findall('atom:author', namespaces):
+            name = author.find('atom:name', namespaces)
+            if name is not None:
+                authors.append(name.text)
+        paper['authors'] = authors
+        
+        # Extract links
+        links = {}
+        for link in entry.findall('atom:link', namespaces):
+            rel = link.get('rel')
+            title_attr = link.get('title')
+            href = link.get('href')
+            
+            if title_attr == 'pdf':
+                links['pdf'] = href
+            elif rel == 'alternate':
+                links['html'] = href
+        paper['links'] = links
+        
+        # Extract categories
+        categories = []
+        for category in entry.findall('atom:category', namespaces):
+            term = category.get('term')
+            if term:
+                categories.append(term)
+        paper['categories'] = categories
+        
+        # Extract primary category
+        primary_cat = entry.find('arxiv:primary_category', namespaces)
+        if primary_cat is not None:
+            paper['primary_category'] = primary_cat.get('term')
+        
+        # Extract comment if present
+        comment = entry.find('arxiv:comment', namespaces)
+        if comment is not None:
+            paper['comment'] = comment.text
+        
+        # Extract journal reference if present
+        journal_ref = entry.find('arxiv:journal_ref', namespaces)
+        if journal_ref is not None:
+            paper['journal_ref'] = journal_ref.text
+        
+        # Extract DOI if present
+        doi = entry.find('arxiv:doi', namespaces)
+        if doi is not None:
+            paper['doi'] = doi.text
+        
+        result['papers'].append(paper)
+    
+    return result
+
+
 # Helper functions for common date ranges
 def last_days(days):
     """Get datetime for N days ago"""
@@ -109,21 +240,37 @@ def last_months(months):
     return datetime.now() - timedelta(days=months * 30)
 
 
-def search_multiple_topics(topics, **kwargs):
+def search_multiple_topics(topics, return_json=True, **kwargs):
     """
     Search multiple topics separately with individual API calls.
 
     Args:
         topics: List of topics to search separately
+        return_json: If True, return parsed JSON; if False, return raw XML (default: True)
         **kwargs: Additional parameters passed to search_arxiv
 
     Returns:
-        Dictionary with results for each topic
+        Dictionary with results for each topic (JSON format if return_json=True)
     """
     results = {}
     for topic in topics:
         print(f"Searching for: {topic}...")
-        results[topic] = search_arxiv(topic, **kwargs)
+        xml_result = search_arxiv(topic, **kwargs)
+        
+        if return_json:
+            # Parse XML to JSON
+            json_result = parse_arxiv_xml_to_json(xml_result)
+            results[topic] = json_result
+            print(f"Found {json_result['total_results']} results for '{topic}', retrieved {len(json_result['papers'])} papers")
+        else:
+            results[topic] = xml_result
+            # Count results from XML response
+            import re
+            total_results = re.search(r'<opensearch:totalResults[^>]*>(\d+)</opensearch:totalResults>', xml_result)
+            if total_results:
+                count = total_results.group(1)
+                print(f"Found {count} results for '{topic}'")
+        
         # Be nice to the API - add a delay between requests
         import time
         time.sleep(3)  # 3 second delay as recommended
@@ -135,27 +282,28 @@ def search_multiple_topics(topics, **kwargs):
 
 # Example usage:
 if __name__ == "__main__":
-    # Papers from last 6 months
-    # print("RAG papers from last 6 months:")
-    # result = search_arxiv("RAG", date_from=last_months(6), max_results=10)
-    # print(result[:500])
 
-    # print("\n" + "=" * 50 + "\n")
+    keyword_a=KeywordAgent()
+    prompt=''' Theoretical Bounds on Sample Complexity for Few-Shot Learning
 
-    # Papers from last year
-    # print("AI agent papers from last year:")
-    # raglist=['electrons','RAG','IOT']
-    # result = search_arxiv(raglist, date_from=last_days(365), max_results=10,operator="OR")
-    # print(result)
-    keyword_a=KeywordAgent
-    prompt=''''''
-    topics = keyword_a.generate_response()
-    all_results = search_multiple_topics(topics, date_from=last_days(365), max_results=10)
+I'm exploring the theoretical foundations of few-shot learning - specifically, what are 
+the fundamental limits on how few examples are needed to learn a new task? I want to 
+derive sample complexity bounds that depend on task similarity, model capacity, and the 
+structure of the meta-learning algorithm. This could help explain why certain meta-learning 
+architectures (like MAML or Prototypical Networks) work better than others and guide the 
+design of more sample-efficient algorithms.'''
 
-    # Access individual results
-    print("RAG papers:", all_results["RAG"])
-    print("Agent papers:", all_results["agents"])
-    print("IOT papers:", all_results["IOT"])
+
+    topics = keyword_a.generate_response(prompt)
+    print(topics)
+    all_results = search_multiple_topics(topics, max_results=10, return_json=True, date_from=last_months(36))
+
+    # Save results to JSON file
+
+    print(json.dumps(all_results, indent=4))
+
+
+
 
     # print("\n" + "=" * 50 + "\n")
 

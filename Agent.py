@@ -73,7 +73,7 @@ class Agent:
                     time.sleep(wait_time)
 
                     logger.info("Retrying request after rate limit wait")
-                    return self.generate_chat_response(prompt)
+                    return self.generate_text_generation_response(prompt)
 
     def get_chat_history(self):
 

@@ -15,11 +15,12 @@ Your task is to:
 5. Prioritize keywords that balance specificity with coverage
 
 Output Requirements:
-- Return ONLY valid JSON with no additional text or explanation
-- Use the following structure and put + instead of spaces do not use - just like Retrieval-Augmented use just + if it is another word :
+- Return ONLY valid JSON with no additional text or explanation : 
+dont use any - signs just words that are separated by a space
+return 5 related keywords
 
 {
-  "keywords": ["python list of 5-10 most essential search terms"]
+  "keywords": ["python list of 5 most essential search terms"]
 }
 
 Guidelines:

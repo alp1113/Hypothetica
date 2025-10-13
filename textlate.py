@@ -276,7 +276,7 @@ if __name__ == "__main__":
 \usepackage{tikz}
 \usetikzlibrary{shapes.geometric, arrows}
 
-\title{\textcolor{red}{YerleşAI: An AI-Powered System for Generating Personalized Domestic Relocation Reports in Turkey}}
+\title{\textcolor{red}{YerleşAI: An AI-Powered System for CREATINGGG Personalized Domestic Relocation Reports in Turkey}}
 
 \author{
   Your Name Here \\
