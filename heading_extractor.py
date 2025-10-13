@@ -103,8 +103,8 @@ class HeadingExtractor():
                     end_idx = h['line_num']
                     break
 
-        # Extract text between headings (excluding the headings themselves)
-        content_lines = lines[start_idx + 1:end_idx]
+        # Extract text between headings (including the headings themselves)
+        content_lines = lines[start_idx:end_idx]
         return '\n'.join(content_lines).strip()
 
 
@@ -222,7 +222,7 @@ class HeadingExtractor():
 
 if __name__ == '__main__':
     extractor = HeadingExtractor()
-    source = "/Users/harun/Documents/GitHub/Hypothetica/1708.04776v1.pdf"
+    source = "https://arxiv.org/pdf/2311.07582v1"
     markdown = extractor.convert_to_markdown(source)
     headings = extractor.extract_headings(markdown)
     headings_json = extractor.get_headings_json(headings)
@@ -231,8 +231,8 @@ if __name__ == '__main__':
 
     # # Example: Extract text between two headings
     # print("\n=== TEXT BETWEEN HEADINGS ===")
-    # text = get_text_between_headings(markdown, "Results", "Related Work")
-    # print(text)
+    text = extractor.get_text_between_headings(markdown, "RELATED WORKS", "OUR PROPOSED APPROACH")
+    print(text)
 
     # # Example: Extract introduction
     # print("\n=== INTRODUCTION ===")
