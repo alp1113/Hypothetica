@@ -3,3 +3,7 @@
 *.pdf
 /__pycache__
 *.txt
+.embed_cache/cache.sqlite3
+heading_extraction/__init__.py
+heading_extraction/__init__.py
+index_dir/meta.jsonl

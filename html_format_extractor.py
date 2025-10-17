@@ -7,7 +7,7 @@ import re
 import time
 from datetime import datetime
 from bs4 import BeautifulSoup
-from ArxivReq import search_arxiv, last_days
+from ArxivReq import last_days
 
 
 def parse_arxiv_response(xml_response):

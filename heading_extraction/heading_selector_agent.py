@@ -19,7 +19,7 @@ You will receive:
 4. **List of Headings**: All section headings from the paper (without the actual content)
 
 ## Task
-Based solely on the title, abstract, and heading names, identify exactly **3 heading intervals** most likely to contain content that would help determine if the user's research idea is present in or related to this paper.
+Based solely on the project idea title, abstract, and heading names, identify exactly **3 heading intervals** most likely to contain content that would help determine if the user's research idea is present in or related to this paper.
 
 ### Interval Definition
 - An interval is defined by two headings: `from_heading` (inclusive) and `to_heading` (exclusive)
@@ -36,14 +36,48 @@ Based solely on the title, abstract, and heading names, identify exactly **3 hea
 - Avoid selecting INTRODUCTION and CONCLUSION in from heading instance 
 
 ### Consecutive Section Handling
-- If you want to select multiple consecutive sections (e.g., sections 1, 2, and 3 that appear one after another), **combine them into a single interval**
-- Set `from_heading` to the first section and `to_heading` to the section AFTER the last one you want to include
-- Example: To select sections III. OUR PROPOSED APPROACH, IV. EXPERIMENTS", and V. CONCLUSION":
+
+**When to Combine Sections:**
+- If multiple sections that appear **one after another** in the paper are all relevant to the user's idea, combine them into a **single interval** instead of creating separate intervals for each section
+- This is more efficient and captures continuous content as one cohesive block
+
+**How to Combine Consecutive Sections:**
+1. Identify the **first relevant section** - this becomes your `from_heading`
+2. Identify the **last relevant section** in the consecutive sequence
+3. Find the section that comes **immediately after** the last relevant section - this becomes your `to_heading`
+4. The interval will include everything from `from_heading` up to (but not including) `to_heading`
+
+**Visual Example:**
+
+Given this paper structure:
+I. INTRODUCTION
+II. RELATED WORK
+III. OUR PROPOSED APPROACH
+IV. EXPERIMENTS
+V. RESULTS ANALYSIS
+VI. CONCLUSION
+**Scenario 1:** You want sections III, IV, and V (three consecutive sections)
 ```json
+{
+  "from_heading": "OUR PROPOSED APPROACH",
+  "to_heading": "CONCLUSION"
+}
+Scenario 2: You want sections II and III (two consecutive sections)
+{
+  "from_heading": "RELATED WORK",
+  "to_heading": "EXPERIMENTS"
+}
+Scenario 3: You want sections II and V (non-consecutive sections)
+[
   {
-    "from_heading": "OUR PROPOSED APPROACH",
+    "from_heading": "RELATED WORK",
+    "to_heading": "OUR PROPOSED APPROACH"
+  },
+  {
+    "from_heading": "RESULTS ANALYSIS",
     "to_heading": "CONCLUSION"
   }
+]
 
         ''',top_p=0.85,top_k=40,temperature=0.1,response_mime_type='application/json',create_chat=False)
 
@@ -74,7 +108,7 @@ Based solely on the title, abstract, and heading names, identify exactly **3 hea
 
 if __name__ == '__main__':
      extractor = HeadingExtractor()
-     source = "/Users/harun/Documents/GitHub/Hypothetica/1708.04776v1.pdf"
+     source = "https://arxiv.org/pdf/2311.07582v1"
      markdown = extractor.convert_to_markdown(source)
      headings = extractor.extract_headings(markdown)
      headings_json = extractor.get_headings_json(headings)
