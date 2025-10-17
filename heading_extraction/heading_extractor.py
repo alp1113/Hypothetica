@@ -3,7 +3,7 @@ import re
 from docling.document_converter import DocumentConverter
 
 
-class HeadingExtractor():
+class HeadingExtractor:
     def __init__(self):
         self.converter=DocumentConverter()
 
@@ -220,6 +220,24 @@ class HeadingExtractor():
         content_lines = lines[start_idx + 1:end_idx]
         return '\n'.join(content_lines).strip()
 
+    def save_extracted_text_to_file(self, extracted_text_list, filename="extracted_headings.txt"):
+        """
+        Save the extracted heading text to a txt file.
+
+        Args:
+            extracted_text_list (list): List of extracted text strings from headings
+            filename (str): Name of the output file (default: "extracted_headings.txt")
+        """
+        try:
+            with open(filename, 'w', encoding='utf-8') as f:
+                for i, text in enumerate(extracted_text_list, 1):
+                    f.write(f"=== EXTRACTED SECTION {i} ===\n")
+                    f.write(text)
+                    f.write("\n\n" + "=" * 50 + "\n\n")
+            print(f"Extracted text saved to: {filename}")
+        except Exception as e:
+            print(f"Error saving file: {e}")
+
 if __name__ == '__main__':
     extractor = HeadingExtractor()
     source = "https://arxiv.org/pdf/2311.07582v1"
@@ -231,13 +249,13 @@ if __name__ == '__main__':
 
     # # Example: Extract text between two headings
     # print("\n=== TEXT BETWEEN HEADINGS ===")
-    text = extractor.get_text_between_headings(markdown, "RELATED WORKS", "OUR PROPOSED APPROACH")
+    text = extractor.get_text_between_headings(markdown, "Related Work", "Methods")
     print(text)
 
     # # Example: Extract introduction
     # print("\n=== INTRODUCTION ===")
-    # introduction = extract_introduction(markdown)
-    # print(introduction)
+    # introduction = extractor.extract_introduction(markdown)
+    # # print(introduction)
     #
     # print("\n=== CONCLUSION ===")
     # conclusion = extract_conclusion(markdown)
