@@ -7,3 +7,6 @@
 heading_extraction/__init__.py
 heading_extraction/__init__.py
 index_dir/meta.jsonl
+/Agents/__pycache__
+*.pyc
+*.pyc

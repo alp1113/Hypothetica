@@ -75,7 +75,7 @@ Example Output for Multimodal Medical Retrieval:
         return keyword_list
 
 
-if __name__ == '__main__':
-    keyworda=KeywordAgent()
-    response=keyworda.generate_keyword_agent_response('''I want to develop a multimodal retrieval-augmented generation (RAG) system that can process and reason over both text documents and images simultaneously. The idea is to use vision-language models to extract semantic information from diagrams, charts, and figures in scientific papers, and then integrate this visual understanding with the textual content for more comprehensive question-answering. I'm particularly interested in applying this to medical literature where visual data like X-rays, MRI scans, and anatomical diagrams are crucial for understanding. The system should be able to answer complex queries that require correlating information from both text passages and medical images, potentially using cross-modal attention mechanisms. I'm also curious about efficient indexing strategies for this kind of multimodal data and how to handle cases where the visual and textual information might be contradictory.''')
-    print(response)
+# if __name__ == '__main__':
+#     keyworda=KeywordAgent()
+#     response=keyworda.generate_keyword_agent_response('''I want to develop a multimodal retrieval-augmented generation (RAG) system that can process and reason over both text documents and images simultaneously. The idea is to use vision-language models to extract semantic information from diagrams, charts, and figures in scientific papers, and then integrate this visual understanding with the textual content for more comprehensive question-answering. I'm particularly interested in applying this to medical literature where visual data like X-rays, MRI scans, and anatomical diagrams are crucial for understanding. The system should be able to answer complex queries that require correlating information from both text passages and medical images, potentially using cross-modal attention mechanisms. I'm also curious about efficient indexing strategies for this kind of multimodal data and how to handle cases where the visual and textual information might be contradictory.''')
+#     print(response)
