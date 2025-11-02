@@ -10,3 +10,6 @@ index_dir/meta.jsonl
 /Agents/__pycache__
 *.pyc
 *.pyc
+*.pyc
+/Agents/__pycache__
+embeddemo/sample_papers.jsonl

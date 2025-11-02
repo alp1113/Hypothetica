@@ -36,17 +36,17 @@ Return exactly 5 papers that best align with the user's research direction, rank
         parsed_response = json.loads(response.text)
         return json.dumps(parsed_response, indent=2)
 
-if __name__ == '__main__':
-    relevant_paper_selector = RelevantPaperSelectorAgent()
-    wrapper=QueryWrapper()
-    user_idea="""I'm exploring the theoretical foundations of few-shot learning - specifically, what are 
-the fundamental limits on how few examples are needed to learn a new task? I want to 
-derive sample complexity bounds that depend on task similarity, model capacity, and the 
-structure of the meta-learning algorithm. This could help explain why certain meta-learning 
-architectures (like MAML or Prototypical Networks) work better than others and guide the """
-    papers=wrapper.search_literature(user_idea, include_scores=False)
-    print('-----------------------')
-    print(papers)
+# if __name__ == '__main__':
+#     relevant_paper_selector = RelevantPaperSelectorAgent()
+#     wrapper=QueryWrapper()
+#     user_idea="""I'm exploring the theoretical foundations of few-shot learning - specifically, what are
+# the fundamental limits on how few examples are needed to learn a new task? I want to
+# derive sample complexity bounds that depend on task similarity, model capacity, and the
+# structure of the meta-learning algorithm. This could help explain why certain meta-learning
+# architectures (like MAML or Prototypical Networks) work better than others and guide the """
+#     papers=wrapper.search_literature(user_idea, include_scores=False)
+#     print('-----------------------')
+#     print(papers)
 
-    selected_papers_from_agent=relevant_paper_selector.generate_relevant_paper_selector_response(user_idea,papers)
-    print(selected_papers_from_agent)
+#     selected_papers_from_agent=relevant_paper_selector.generate_relevant_paper_selector_response(user_idea,papers)
+#     print(selected_papers_from_agent)

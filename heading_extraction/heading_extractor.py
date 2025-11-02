@@ -1,5 +1,8 @@
 import json
 import re
+import asyncio
+import os
+from datetime import datetime
 from docling.document_converter import DocumentConverter
 
 
@@ -12,6 +15,38 @@ class HeadingExtractor:
         result=self.converter.convert(source)
         markdown = result.document.export_to_markdown()
         return markdown
+
+    async def convert_to_markdown_async(self, source):
+        loop = asyncio.get_event_loop()
+        result = await loop.run_in_executor(None, self.converter.convert, source)
+        markdown = result.document.export_to_markdown()
+        return markdown
+
+    async def extract_headings_async(self, markdown_text):
+        loop = asyncio.get_event_loop()
+        headings = await loop.run_in_executor(None, self.extract_headings, markdown_text)
+        return headings
+
+    async def process_pdfs_async(self, pdf_urls):
+        """Process multiple PDFs asynchronously and extract headings"""
+        all_headings = []
+        
+        async def process_single_pdf(url):
+            try:
+                markdown = await self.convert_to_markdown_async(url)
+                headings = await self.extract_headings_async(markdown)
+                return headings
+            except Exception as e:
+                print(f"Error processing {url}: {e}")
+                return []
+        
+        tasks = [process_single_pdf(url) for url in pdf_urls]
+        results = await asyncio.gather(*tasks)
+        
+        for headings in results:
+            all_headings.extend(headings)
+        
+        return all_headings
 
     def clean_heading_text(self,text, is_title=False):
         """Clean heading text by removing content after colons and limiting length."""
@@ -238,6 +273,69 @@ class HeadingExtractor:
         except Exception as e:
             print(f"Error saving file: {e}")
 
+    def save_pdf_info_to_txt(self, paper_info, extracted_texts, user_idea, paper_index):
+        """
+        Save PDF information to a text file in the extracted_pdf_info directory.
+        
+        Args:
+            paper_info: Dictionary containing paper title, abstract, url
+            extracted_texts: List of extracted text sections
+            user_idea: The original research idea
+            paper_index: Index of the paper for unique filename
+        
+        Returns:
+            str: Path to the saved file, or None if failed
+        """
+        # Ensure the directory exists
+        output_dir = "Agents/extracted_pdf_info"
+        os.makedirs(output_dir, exist_ok=True)
+        
+        # Create a safe filename from paper title
+        safe_title = re.sub(r'[^\w\s-]', '', paper_info['title']).strip()
+        safe_title = re.sub(r'[-\s]+', '_', safe_title)[:50]  # Limit length
+        
+        # Create filename with timestamp and index
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"paper_{paper_index:03d}_{safe_title}_{timestamp}.txt"
+        filepath = os.path.join(output_dir, filename)
+        
+        # Prepare the content
+        content = f"""RESEARCH IDEA: {user_idea}
+
+{'='*80}
+PAPER INFORMATION
+{'='*80}
+
+TITLE: {paper_info['title']}
+
+URL: {paper_info['url']}
+
+ABSTRACT:
+{paper_info['abstract']}
+
+{'='*80}
+SELECTED HEADINGS AND EXTRACTED CONTENT
+{'='*80}
+
+"""
+        
+        # Add extracted texts
+        for i, text in enumerate(extracted_texts, 1):
+            content += f"\n{'-'*60}\nSECTION {i}\n{'-'*60}\n\n{text}\n\n"
+        
+        # Add footer
+        content += f"\n{'='*80}\nEXTRACTED ON: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n{'='*80}\n"
+        
+        # Write to file
+        try:
+            with open(filepath, 'w', encoding='utf-8') as f:
+                f.write(content)
+            print(f"Saved PDF info to: {filepath}")
+            return filepath
+        except Exception as e:
+            print(f"Error saving PDF info to {filepath}: {e}")
+            return None
+
 if __name__ == '__main__':
     extractor = HeadingExtractor()
     source = "https://arxiv.org/pdf/2311.07582v1"
@@ -246,11 +344,11 @@ if __name__ == '__main__':
     headings_json = extractor.get_headings_json(headings)
     print(headings_json)
 
-
-    # # Example: Extract text between two headings
-    # print("\n=== TEXT BETWEEN HEADINGS ===")
-    text = extractor.get_text_between_headings(markdown, "Related Work", "Methods")
-    print(text)
+#
+#     # # Example: Extract text between two headings
+#     # print("\n=== TEXT BETWEEN HEADINGS ===")
+#     text = extractor.get_text_between_headings(markdown, "Related Work", "Methods")
+#     print(text)
 
     # # Example: Extract introduction
     # print("\n=== INTRODUCTION ===")

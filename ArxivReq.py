@@ -349,19 +349,19 @@ class ArxivReq:
 
 
 # Example usage:
-if __name__ == "__main__":
-
-    prompt=''' Theoretical Bounds on Sample Complexity for Few-Shot Learning
-
-I'm exploring the theoretical foundations of few-shot learning - specifically, what are 
-the fundamental limits on how few examples are needed to learn a new task? I want to 
-derive sample complexity bounds that depend on task similarity, model capacity, and the 
-structure of the meta-learning algorithm. This could help explain why certain meta-learning 
-architectures (like MAML or Prototypical Networks) work better than others and guide the 
-design of more sample-efficient algorithms.'''
-
-    request=ArxivReq()
-    print(request.get_papers(prompt))
+# if __name__ == "__main__":
+#
+#     prompt=''' Theoretical Bounds on Sample Complexity for Few-Shot Learning
+#
+# I'm exploring the theoretical foundations of few-shot learning - specifically, what are
+# the fundamental limits on how few examples are needed to learn a new task? I want to
+# derive sample complexity bounds that depend on task similarity, model capacity, and the
+# structure of the meta-learning algorithm. This could help explain why certain meta-learning
+# architectures (like MAML or Prototypical Networks) work better than others and guide the
+# design of more sample-efficient algorithms.'''
+#
+#     request=ArxivReq()
+#     print(request.get_papers(prompt))
 
 
 

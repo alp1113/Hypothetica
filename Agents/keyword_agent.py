@@ -1,6 +1,6 @@
 import json
 
-from Agent import Agent
+from Agents.Agent import Agent
 
 
 class KeywordAgent(Agent):
