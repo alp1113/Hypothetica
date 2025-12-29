@@ -109,7 +109,6 @@ Frontend
 	•	Color-coded sentence-level feedback
 	•	Expandable evidence views
 
-⸻
 
  Evaluation Highlights
 	•	Tested on 10 diverse research ideas
